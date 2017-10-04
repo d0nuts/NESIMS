@@ -1,0 +1,5 @@
+<h2>{{ report.id }}</h2>
+    <h2>{{ report.title }}</h2>
+    <h2>{{ report.description }}</h2>
+
+ <li>{{ report.title }} - <a href="{% url 'op:report-delete' pk=report.pk %}">Delete</a></li>

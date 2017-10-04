@@ -1,0 +1,114 @@
+{% extends 'op/base.html' %}
+
+{% block body %}
+    <div class="container-fluid">
+        <div class="row">
+            <nav class="col-sm-3 col-md-2 d-none d-sm-block bg-light sidebar">
+                <p>red</p>
+                <ul class="nav nav-pills flex-column" id="redreports">
+
+                    {% for report in object_list %}
+
+                        {% if report.category == 'red' %}
+                            <li class="nav-item" data-value-id='{{ report.pk }}'>
+                                <a onclick='UpdatePKFunction({{ report.pk }})' class="nav-link " href="#">{{ report.title }}</a>
+                            </li>
+                        {% endif %}
+                    {% empty %}
+                        <li class="empty">No values yet.</li>
+                    {% endfor %}
+
+                </ul>
+                <p>yellow</p>
+
+                <ul class="nav nav-pills flex-column" id="yellowreports">
+                    {% for report in object_list %}
+                        {% if report.category == 'yellow' %}
+                            <li class="nav-item" data-value-id='{{ report.pk }}'>
+                                <a onclick='UpdatePKFunction({{ report.pk }})' class="nav-link " href="#">{{ report.title }}</a>
+                            </li>
+                        {% endif %}
+                    {% empty %}
+                        <li class="empty">No values yet.</li>
+                    {% endfor %}
+                </ul>
+
+                <p>green</p>
+
+                <ul class="nav nav-pills flex-column" id="greenreports">
+                    {% for report in object_list %}
+                        {% if report.category == 'green' %}
+                            <li class="nav-item" data-value-id='{{ report.pk }}'>
+                                <a onclick='UpdatePKFunction({{ report.pk }})' class="nav-link " href="#">{{ report.title }}</a>
+                            </li>
+                        {% endif %}
+                    {% empty %}
+                        <li class="empty">No values yet.</li>
+                    {% endfor %}
+                </ul>
+            </nav>
+            <main class="col-sm-9 ml-sm-auto col-md-10 pt-3" role="main">
+                <h1>Report</h1>
+                <div id='DetailView'>
+                    <p>Select</p>
+                </div>
+            </main>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block extra_body %}
+    <script>
+        function UpdatePKFunction(pk) {
+            pk = pk
+            jQuery.ajax({
+                url: '/' + pk,
+                success: function (data) {
+                    $('#DetailView').html(data);
+                }
+            });
+        };
+    </script>
+
+    <script>
+        $(function () {
+            var ws_path = "/stream/";
+            console.log("Connecting to " + ws_path);
+            var webSocketBridge = new channels.WebSocketBridge();
+            webSocketBridge.connect(ws_path);
+            webSocketBridge.listen();
+            webSocketBridge.demultiplex('intval', function (payload, streamName) {
+                // Handle different actions
+                if (payload.action == "create") {
+
+                    var content = "<li class=\"nav-item\" data-value-id='" + payload.pk + "'>" +
+                        "<a onclick='UpdatePKFunction("+ payload.pk  + ")' class=\"nav-link\" href=\"#\">" + payload.data.title + "</a></li>";
+
+                    if(payload.data.category =="red")
+                        $("#redreports").prepend(content);
+                    if (payload.data.category == "yellow")
+                    $("#yellowreports").prepend(content);
+                    if (payload.data.category == "green")
+                    $("#greenreports").prepend(content);
+                    // Remove empty message
+                    $("#reports .empty").remove();
+                } else if (payload.action == "update") {
+                    $("p[data-value-id=" + payload.pk + "] label").text(payload.data.name);
+                } else if (payload.action == "delete") {
+                    $("p[data-value-id=" + payload.pk + "]").remove();
+                } else {
+                    console.log("Unknown action " + payload.action);
+                }
+            });
+
+            // Helpful debugging
+            webSocketBridge.socket.addEventListener('open', function () {
+                console.log("Connected to notification socket");
+            });
+            webSocketBridge.socket.addEventListener('close', function () {
+                console.log("Disconnected to notification socket");
+            });
+        });
+    </script>
+{% endblock %}
